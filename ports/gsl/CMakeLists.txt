@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(gsl C)
+project(libgsl C)
 
 option(INSTALL_HEADERS "Install public header files" ON)
 
@@ -27,15 +27,10 @@ function(extract_sources SUBFOLDER ALLSOURCES)
 endfunction(extract_sources)
 
 set(SOURCES)
-set(CBLAS_SOURCES)
 extract_from_makefile("SUBDIRS = ([^\n]*)" FOLDERS "./Makefile.am")
 extract_sources("." SOURCES)
 foreach(DIR IN LISTS FOLDERS)
-    if("${DIR}" STREQUAL "cblas")
-        extract_sources("${DIR}" CBLAS_SOURCES)
-    else()
-        extract_sources("${DIR}" SOURCES)
-    endif()
+    extract_sources("${DIR}" SOURCES)
 endforeach()
 
 file(READ gsl_types.h GSLTYPES_H)
@@ -48,19 +43,13 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gsl_types.h "${GSLTYPES_H}")
 file(GLOB_RECURSE PUBLIC_HEADERS gsl*.h)
 list(APPEND PUBLIC_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/gsl_types.h)
 
-add_library(gslcblas ${CBLAS_SOURCES})
-set_target_properties(gslcblas PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
-add_library(gsl ${SOURCES})
-set_target_properties(gsl PROPERTIES DEFINE_SYMBOL DLL_EXPORT WINDOWS_EXPORT_ALL_SYMBOLS ON)
-target_link_libraries(gsl PUBLIC gslcblas)
-
+add_library(libgsl ${SOURCES})
+set_target_properties(libgsl PROPERTIES DEFINE_SYMBOL DLL_EXPORT WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(INSTALL_HEADERS)
-    set_target_properties(gsl PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
+    set_target_properties(libgsl PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 endif()
-target_include_directories(gslcblas PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(gsl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(libgsl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # For the build, we need to copy all headers to the gsl directory
 file(COPY ${PUBLIC_HEADERS} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/gsl")
 
@@ -69,7 +58,7 @@ if(INSTALL_HEADERS)
     set(TARGET_INSTALL_OPTIONS PUBLIC_HEADER DESTINATION include/gsl)
 endif()
 
-install(TARGETS gsl gslcblas
+install(TARGETS libgsl
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

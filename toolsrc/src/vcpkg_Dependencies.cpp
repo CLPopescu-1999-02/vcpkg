@@ -174,13 +174,12 @@ namespace vcpkg::Dependencies
                 if (auto bpgh = maybe_bpgh.get())
                     return InstallPlanAction{spec, {nullopt, *bpgh, nullopt}, request_type};
 
-                ExpectedT<SourceParagraph, ParseControlErrorInfo> maybe_spgh =
+                Expected<SourceParagraph> maybe_spgh =
                     Paragraphs::try_load_port(paths.get_filesystem(), paths.port_dir(spec));
                 if (auto spgh = maybe_spgh.get())
                     return InstallPlanAction{spec, {nullopt, nullopt, *spgh}, request_type};
 
-                print_error_message(maybe_spgh.error());
-                Checks::exit_fail(VCPKG_LINE_INFO);
+                Checks::exit_with_message(VCPKG_LINE_INFO, "Could not find package %s", spec);
             }
         };
 
@@ -284,13 +283,10 @@ namespace vcpkg::Dependencies
                 if (auto bpgh = maybe_bpgh.get())
                     return ExportPlanAction{spec, {nullopt, *bpgh, nullopt}, request_type};
 
-                ExpectedT<SourceParagraph, ParseControlErrorInfo> maybe_spgh =
+                Expected<SourceParagraph> maybe_spgh =
                     Paragraphs::try_load_port(paths.get_filesystem(), paths.port_dir(spec));
                 if (auto spgh = maybe_spgh.get())
                     return ExportPlanAction{spec, {nullopt, nullopt, *spgh}, request_type};
-
-                else
-                    print_error_message(maybe_spgh.error());
 
                 Checks::exit_with_message(VCPKG_LINE_INFO, "Could not find package %s", spec);
             }

@@ -80,14 +80,14 @@ namespace vcpkg::COFFFileReader
             return ret;
         }
 
-        MachineType machine_type() const
+        MachineType machineType() const
         {
             static const size_t MACHINE_TYPE_OFFSET = 0;
             static const size_t MACHINE_TYPE_SIZE = 2;
 
             std::string machine_field_as_string = data.substr(MACHINE_TYPE_OFFSET, MACHINE_TYPE_SIZE);
             const uint16_t machine = reinterpret_bytes<uint16_t>(machine_field_as_string.c_str());
-            return to_machine_type(machine);
+            return getMachineType(machine);
         }
 
     private:
@@ -203,14 +203,14 @@ namespace vcpkg::COFFFileReader
             return ret;
         }
 
-        MachineType machine_type() const
+        MachineType machineType() const
         {
             static const size_t MACHINE_TYPE_OFFSET = 6;
             static const size_t MACHINE_TYPE_SIZE = 2;
 
             std::string machine_field_as_string = data.substr(MACHINE_TYPE_OFFSET, MACHINE_TYPE_SIZE);
             const uint16_t machine = reinterpret_bytes<uint16_t>(machine_field_as_string.c_str());
-            return to_machine_type(machine);
+            return getMachineType(machine);
         }
 
     private:
@@ -236,7 +236,7 @@ namespace vcpkg::COFFFileReader
 
         read_and_verify_PE_signature(fs);
         CoffFileHeader header = CoffFileHeader::read(fs);
-        MachineType machine = header.machine_type();
+        MachineType machine = header.machineType();
         return {machine};
     }
 
@@ -297,9 +297,9 @@ namespace vcpkg::COFFFileReader
             marker.set_to_offset(offset + ArchiveMemberHeader::HEADER_SIZE); // Skip the header, no need to read it.
             marker.seek_to_marker(fs);
             const uint16_t first_two_bytes = peek_value_from_stream<uint16_t>(fs);
-            const bool isImportHeader = to_machine_type(first_two_bytes) == MachineType::UNKNOWN;
+            const bool isImportHeader = getMachineType(first_two_bytes) == MachineType::UNKNOWN;
             const MachineType machine =
-                isImportHeader ? ImportHeader::read(fs).machine_type() : CoffFileHeader::read(fs).machine_type();
+                isImportHeader ? ImportHeader::read(fs).machineType() : CoffFileHeader::read(fs).machineType();
             machine_types.insert(machine);
         }
 

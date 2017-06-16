@@ -18,9 +18,7 @@ vcpkg_download_distfile(ARCHIVE
 vcpkg_extract_source_archive(${ARCHIVE})
 
 vcpkg_apply_patches(SOURCE_PATH ${SOURCE_PATH}
-    PATCHES ${CMAKE_CURRENT_LIST_DIR}/fix-option.patch
-            ${CMAKE_CURRENT_LIST_DIR}/fix-option-2.patch
-            ${CMAKE_CURRENT_LIST_DIR}/fix-arm-config-define.patch)
+    PATCHES ${CMAKE_CURRENT_LIST_DIR}/fix-option.patch)
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}

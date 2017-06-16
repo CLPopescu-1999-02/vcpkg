@@ -5,9 +5,6 @@
 #include "vcpkg_Checks.h"
 #include "vcpkg_Maps.h"
 #include "vcpkg_System.h"
-#include "vcpkg_Util.h"
-#include "vcpkg_expected.h"
-
 #include "vcpkglib_helpers.h"
 
 namespace vcpkg
@@ -24,86 +21,51 @@ namespace vcpkg
         static const std::string DESCRIPTION = "Description";
         static const std::string MAINTAINER = "Maintainer";
         static const std::string BUILD_DEPENDS = "Build-Depends";
-        static const std::string SUPPORTS = "Supports";
     }
 
-    static span<const std::string> get_list_of_valid_fields()
+    static const std::vector<std::string>& get_list_of_valid_fields()
     {
-        static const std::string valid_fields[] = {SourceParagraphRequiredField::SOURCE,
-                                                   SourceParagraphRequiredField::VERSION,
+        static const std::vector<std::string> valid_fields = {SourceParagraphRequiredField::SOURCE,
+                                                              SourceParagraphRequiredField::VERSION,
 
-                                                   SourceParagraphOptionalField::DESCRIPTION,
-                                                   SourceParagraphOptionalField::MAINTAINER,
-                                                   SourceParagraphOptionalField::BUILD_DEPENDS,
-                                                   SourceParagraphOptionalField::SUPPORTS};
+                                                              SourceParagraphOptionalField::DESCRIPTION,
+                                                              SourceParagraphOptionalField::MAINTAINER,
+                                                              SourceParagraphOptionalField::BUILD_DEPENDS};
 
         return valid_fields;
     }
 
-    void print_error_message(span<const ParseControlErrorInfo> error_info_list)
+    SourceParagraph::SourceParagraph() = default;
+
+    SourceParagraph::SourceParagraph(std::unordered_map<std::string, std::string> fields)
     {
-        Checks::check_exit(VCPKG_LINE_INFO, error_info_list.size() > 0);
-
-        for (auto&& error_info : error_info_list)
-        {
-            if (error_info.error)
-            {
-                System::println(
-                    System::Color::error, "Error: while loading %s: %s", error_info.name, error_info.error.message());
-            }
-        }
-
-        bool have_remaining_fields = false;
-        for (auto&& error_info : error_info_list)
-        {
-            if (!error_info.remaining_fields_as_string.empty())
-            {
-                System::println(System::Color::error,
-                                "Error: There are invalid fields in the Source Paragraph of %s",
-                                error_info.name);
-                System::println("The following fields were not expected:\n\n    %s\n\n",
-                                error_info.remaining_fields_as_string);
-                have_remaining_fields = true;
-            }
-        }
-
-        if (have_remaining_fields)
-        {
-            System::println("This is the list of valid fields (case-sensitive): \n\n    %s\n",
-                            Strings::join("\n    ", get_list_of_valid_fields()));
-            System::println("Different source may be available for vcpkg. Use .\\bootstrap-vcpkg.bat to update.\n");
-        }
-    }
-
-    ExpectedT<SourceParagraph, ParseControlErrorInfo> SourceParagraph::parse_control_file(
-        std::unordered_map<std::string, std::string> fields)
-    {
-        SourceParagraph sparagraph;
-        sparagraph.name = details::remove_required_field(&fields, SourceParagraphRequiredField::SOURCE);
-        sparagraph.version = details::remove_required_field(&fields, SourceParagraphRequiredField::VERSION);
-        sparagraph.description = details::remove_optional_field(&fields, SourceParagraphOptionalField::DESCRIPTION);
-        sparagraph.maintainer = details::remove_optional_field(&fields, SourceParagraphOptionalField::MAINTAINER);
+        this->name = details::remove_required_field(&fields, SourceParagraphRequiredField::SOURCE);
+        this->version = details::remove_required_field(&fields, SourceParagraphRequiredField::VERSION);
+        this->description = details::remove_optional_field(&fields, SourceParagraphOptionalField::DESCRIPTION);
+        this->maintainer = details::remove_optional_field(&fields, SourceParagraphOptionalField::MAINTAINER);
 
         std::string deps = details::remove_optional_field(&fields, SourceParagraphOptionalField::BUILD_DEPENDS);
-        sparagraph.depends = expand_qualified_dependencies(parse_comma_list(deps));
-
-        std::string sups = details::remove_optional_field(&fields, SourceParagraphOptionalField::SUPPORTS);
-        sparagraph.supports = parse_comma_list(sups);
+        this->depends = expand_qualified_dependencies(parse_depends(deps));
 
         if (!fields.empty())
         {
             const std::vector<std::string> remaining_fields = Maps::extract_keys(fields);
+            const std::vector<std::string>& valid_fields = get_list_of_valid_fields();
 
             const std::string remaining_fields_as_string = Strings::join("\n    ", remaining_fields);
+            const std::string valid_fields_as_string = Strings::join("\n    ", valid_fields);
 
-            return ParseControlErrorInfo{sparagraph.name, remaining_fields_as_string};
+            System::println(
+                System::Color::error, "Error: There are invalid fields in the Source Paragraph of %s", this->name);
+            System::println("The following fields were not expected:\n\n    %s\n\n", remaining_fields_as_string);
+            System::println("This is the list of valid fields (case-sensitive): \n\n    %s\n", valid_fields_as_string);
+            Checks::exit_fail(VCPKG_LINE_INFO);
         }
-        return sparagraph;
     }
 
     std::vector<Dependency> vcpkg::expand_qualified_dependencies(const std::vector<std::string>& depends)
     {
-        return Util::fmap(depends, [&](const std::string& depend_string) -> Dependency {
+        auto convert = [&](const std::string& depend_string) -> Dependency {
             auto pos = depend_string.find(' ');
             if (pos == std::string::npos) return {depend_string, ""};
             // expect of the form "\w+ \[\w+\]"
@@ -116,12 +78,21 @@ namespace vcpkg
             }
             dep.qualifier = depend_string.substr(pos + 2, depend_string.size() - pos - 3);
             return dep;
-        });
+        };
+
+        std::vector<vcpkg::Dependency> ret;
+
+        for (auto&& depend_string : depends)
+        {
+            ret.push_back(convert(depend_string));
+        }
+
+        return ret;
     }
 
-    std::vector<std::string> parse_comma_list(const std::string& str)
+    std::vector<std::string> parse_depends(const std::string& depends_string)
     {
-        if (str.empty())
+        if (depends_string.empty())
         {
             return {};
         }
@@ -131,17 +102,17 @@ namespace vcpkg
         size_t cur = 0;
         do
         {
-            auto pos = str.find(',', cur);
+            auto pos = depends_string.find(',', cur);
             if (pos == std::string::npos)
             {
-                out.push_back(str.substr(cur));
+                out.push_back(depends_string.substr(cur));
                 break;
             }
-            out.push_back(str.substr(cur, pos - cur));
+            out.push_back(depends_string.substr(cur, pos - cur));
 
             // skip comma and space
             ++pos;
-            if (str[pos] == ' ')
+            if (depends_string[pos] == ' ')
             {
                 ++pos;
             }
@@ -166,49 +137,4 @@ namespace vcpkg
     }
 
     const std::string& to_string(const Dependency& dep) { return dep.name; }
-
-    ExpectedT<Supports, std::vector<std::string>> Supports::parse(const std::vector<std::string>& strs)
-    {
-        Supports ret;
-        std::vector<std::string> unrecognized;
-
-        for (auto&& str : strs)
-        {
-            if (str == "x64")
-                ret.architectures.push_back(Architecture::X64);
-            else if (str == "x86")
-                ret.architectures.push_back(Architecture::X86);
-            else if (str == "arm")
-                ret.architectures.push_back(Architecture::ARM);
-            else if (str == "windows")
-                ret.platforms.push_back(Platform::WINDOWS);
-            else if (str == "uwp")
-                ret.platforms.push_back(Platform::UWP);
-            else if (str == "v140")
-                ret.toolsets.push_back(ToolsetVersion::V140);
-            else if (str == "v141")
-                ret.toolsets.push_back(ToolsetVersion::V141);
-            else if (str == "crt-static")
-                ret.crt_linkages.push_back(Linkage::STATIC);
-            else if (str == "crt-dynamic")
-                ret.crt_linkages.push_back(Linkage::DYNAMIC);
-            else
-                unrecognized.push_back(str);
-        }
-
-        if (unrecognized.empty())
-            return std::move(ret);
-        else
-            return std::move(unrecognized);
-    }
-
-    bool Supports::is_supported(Architecture arch, Platform plat, Linkage crt, ToolsetVersion tools)
-    {
-        auto is_in_or_empty = [](auto v, auto&& c) -> bool { return c.empty() || c.end() != Util::find(c, v); };
-        if (!is_in_or_empty(arch, architectures)) return false;
-        if (!is_in_or_empty(plat, platforms)) return false;
-        if (!is_in_or_empty(crt, crt_linkages)) return false;
-        if (!is_in_or_empty(tools, toolsets)) return false;
-        return true;
-    }
 }

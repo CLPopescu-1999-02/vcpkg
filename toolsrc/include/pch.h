@@ -12,7 +12,6 @@
 #include <chrono>
 #include <codecvt>
 #include <cstdarg>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -32,7 +31,6 @@
 #include <sys/timeb.h>
 #include <system_error>
 #include <time.h>
-#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>

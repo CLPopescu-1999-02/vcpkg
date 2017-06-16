@@ -6,9 +6,6 @@
 
 namespace vcpkg
 {
-    /// <summary>
-    /// Built package metadata
-    /// </summary>
     struct BinaryParagraph
     {
         BinaryParagraph();

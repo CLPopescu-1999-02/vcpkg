@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(fontconfig C)
+project(fontconfig)
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS)
 add_definitions(-FI"${FC_INCLUDE_DIR}/config.h")
@@ -44,8 +44,6 @@ add_library(fontconfig
     src/fcweight.c
     src/fcxml.c
     src/ftglue.c)
-
-set_target_properties(fontconfig PROPERTIES DEFINE_SYMBOL "FcPublic=__declspec(dllexport)")
 
 target_include_directories(fontconfig PRIVATE .
     ${FC_INCLUDE_DIR}

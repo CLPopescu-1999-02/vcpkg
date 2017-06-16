@@ -7,21 +7,12 @@
 
 namespace vcpkg::Commands::List
 {
-    static const std::string OPTION_FULLDESC = "--x-full-desc"; // TODO: This should find a better home, eventually
-
-    static void do_print(const StatusParagraph& pgh, bool FullDesc)
+    static void do_print(const StatusParagraph& pgh)
     {
-        if (FullDesc)
-        {
-            System::println("%-27s %-16s %s", pgh.package.displayname(), pgh.package.version, pgh.package.description);
-        }
-        else
-        {
-            System::println("%-27s %-16s %s",
-                            pgh.package.displayname(),
-                            pgh.package.version,
-                            details::shorten_description(pgh.package.description));
-        }
+        System::println("%-27s %-16s %s",
+                        pgh.package.displayname(),
+                        pgh.package.version,
+                        details::shorten_description(pgh.package.description));
     }
 
     void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths)
@@ -30,8 +21,7 @@ namespace vcpkg::Commands::List
             "The argument should be a substring to search for, or no argument to display all installed libraries.\n%s",
             Commands::Help::create_example_string("list png"));
         args.check_max_arg_count(1, example);
-        const std::unordered_set<std::string> options =
-            args.check_and_get_optional_command_arguments({OPTION_FULLDESC});
+        args.check_and_get_optional_command_arguments({});
 
         const StatusParagraphs status_paragraphs = database_load_check(paths);
         std::vector<StatusParagraph*> installed_packages = get_installed_ports(status_paragraphs);
@@ -52,7 +42,7 @@ namespace vcpkg::Commands::List
         {
             for (const StatusParagraph* status_paragraph : installed_packages)
             {
-                do_print(*status_paragraph, options.find(OPTION_FULLDESC) != options.cend());
+                do_print(*status_paragraph);
             }
         }
         else
@@ -66,7 +56,7 @@ namespace vcpkg::Commands::List
                     continue;
                 }
 
-                do_print(*status_paragraph, options.find(OPTION_FULLDESC) != options.cend());
+                do_print(*status_paragraph);
             }
         }
 

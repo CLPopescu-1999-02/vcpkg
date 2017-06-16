@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(ragel)
+project(ragel CXX)
 
 file(GLOB HEADERS
 	ragel/buffer.h
