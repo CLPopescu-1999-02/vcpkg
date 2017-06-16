@@ -19,7 +19,11 @@ namespace vcpkg::Checks
 
     [[noreturn]] void exit_with_code(const LineInfo& line_info, const int exit_code)
     {
-        Debug::println(System::Color::error, line_info.to_string());
+        if (g_debugging)
+        {
+            System::println(System::Color::error, line_info.to_string());
+        }
+
         ::exit(exit_code);
     }
 

@@ -48,12 +48,7 @@ namespace vcpkg
         const fs::path& get_cmake_exe() const;
         const fs::path& get_git_exe() const;
         const fs::path& get_nuget_exe() const;
-
-        /// <summary>Retrieve a toolset matching a VS version</summary>
-        /// <remarks>
-        ///   Valid version strings are "v140", "v141", and "". Empty string gets the latest.
-        /// </remarks>
-        const Toolset& get_toolset(const std::string& toolset_version) const;
+        const Toolset& get_toolset() const;
 
         Files::Filesystem& get_filesystem() const;
 
@@ -61,6 +56,6 @@ namespace vcpkg
         Lazy<fs::path> cmake_exe;
         Lazy<fs::path> git_exe;
         Lazy<fs::path> nuget_exe;
-        Lazy<std::vector<Toolset>> toolsets;
+        Lazy<Toolset> toolset;
     };
 }

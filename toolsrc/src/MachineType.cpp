@@ -5,7 +5,7 @@
 
 namespace vcpkg
 {
-    MachineType to_machine_type(const uint16_t value)
+    MachineType getMachineType(const uint16_t value)
     {
         MachineType t = static_cast<MachineType>(value);
         switch (t)

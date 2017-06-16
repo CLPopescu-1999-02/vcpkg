@@ -7,8 +7,7 @@ namespace vcpkg
 {
     static bool is_valid_package_spec_char(char c) { return (c == '-') || isdigit(c) || (isalpha(c) && islower(c)); }
 
-    ExpectedT<PackageSpec, PackageSpecParseResult> PackageSpec::from_string(const std::string& spec_as_string,
-                                                                            const Triplet& default_triplet)
+    Expected<PackageSpec> PackageSpec::from_string(const std::string& spec_as_string, const Triplet& default_triplet)
     {
         auto pos = spec_as_string.find(':');
         if (pos == std::string::npos)
@@ -19,7 +18,7 @@ namespace vcpkg
         auto pos2 = spec_as_string.find(':', pos + 1);
         if (pos2 != std::string::npos)
         {
-            return PackageSpecParseResult::TOO_MANY_COLONS;
+            return std::error_code(PackageSpecParseResult::TOO_MANY_COLONS);
         }
 
         const std::string name = spec_as_string.substr(0, pos);
@@ -27,12 +26,11 @@ namespace vcpkg
         return from_name_and_triplet(name, triplet);
     }
 
-    ExpectedT<PackageSpec, PackageSpecParseResult> PackageSpec::from_name_and_triplet(const std::string& name,
-                                                                                      const Triplet& triplet)
+    Expected<PackageSpec> PackageSpec::from_name_and_triplet(const std::string& name, const Triplet& triplet)
     {
         if (Util::find_if_not(name, is_valid_package_spec_char) != name.end())
         {
-            return PackageSpecParseResult::INVALID_CHARACTERS;
+            return std::error_code(PackageSpecParseResult::INVALID_CHARACTERS);
         }
 
         PackageSpec p;

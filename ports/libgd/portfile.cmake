@@ -37,8 +37,7 @@ vcpkg_configure_cmake(
             -DENABLE_JPEG=ON
             -DENABLE_TIFF=ON
             -DENABLE_FREETYPE=ON
-            -DENABLE_WEBP=ON
-            -DENABLE_FONTCONFIG=ON
+            -DEENABLE_WEBP=ON
             -DBUILD_SHARED_LIBS=${LIBGD_SHARED_LIBS}
             -DBUILD_STATIC_LIBS=${LIBGD_STATIC_LIBS}
 )
